@@ -1,0 +1,49 @@
+name: Build iStoreOS x86-64
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          df -h
+
+      - name: Make build script executable
+        run: |
+          chmod +x build.sh
+
+      - name: Build iStoreOS
+        env:
+          JOBS: 2
+        run: |
+          ./build.sh
+
+      - name: List firmware
+        if: always()
+        run: |
+          find istoreos/bin/targets/x86/64/ \
+            -maxdepth 1 \
+            -type f \
+            -printf '%f\n' || true
+
+      - name: Upload firmware
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iStoreOS-x86-64-PassWall-OpenClash
+          path: |
+            istoreos/bin/targets/x86/64/*.img.gz
+            istoreos/bin/targets/x86/64/*.bin
+          if-no-files-found: error
+          retention-days: 7
